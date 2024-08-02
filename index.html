@@ -34,7 +34,8 @@
             margin-bottom: 20px;
         }
 
-        input[type="text"] {
+        input[type="text"],
+        input[type="number"] {
             width: calc(100% - 22px);
             padding: 10px;
             margin-bottom: 10px;
@@ -64,8 +65,7 @@
 
         li {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
             padding: 10px;
             border-bottom: 1px solid #ddd;
             position: relative;
@@ -83,7 +83,8 @@
             cursor: pointer;
             padding: 5px 10px;
             font-size: 14px;
-            margin-left: 10px;
+            align-self: flex-end;
+            margin-top: 10px;
         }
 
         .delete:hover {
@@ -91,6 +92,11 @@
         }
 
         .note {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .quantity {
             font-size: 14px;
             color: #555;
         }
@@ -103,6 +109,12 @@
             text-decoration: line-through;
             color: #aaa;
         }
+
+        .itemHeader {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -111,6 +123,7 @@
         <form id="packingForm">
             <input type="text" id="itemInput" placeholder="Add new item..." required>
             <input type="text" id="noteInput" placeholder="Add note...">
+            <input type="number" id="quantityInput" placeholder="Add quantity..." min="1" required>
             <button type="submit">Add</button>
         </form>
         <ul id="packingList"></ul>
@@ -120,6 +133,7 @@
             const packingForm = document.getElementById('packingForm');
             const itemInput = document.getElementById('itemInput');
             const noteInput = document.getElementById('noteInput');
+            const quantityInput = document.getElementById('quantityInput');
             const packingList = document.getElementById('packingList');
 
             // Load items from localStorage
@@ -127,9 +141,10 @@
 
             packingForm.addEventListener('submit', function (event) {
                 event.preventDefault();
-                addItem(itemInput.value, noteInput.value);
+                addItem(itemInput.value, noteInput.value, quantityInput.value);
                 itemInput.value = '';
                 noteInput.value = '';
+                quantityInput.value = '';
             });
 
             packingList.addEventListener('click', function (event) {
@@ -152,14 +167,15 @@
                     return {
                         text: listItem.querySelector('.itemText').textContent,
                         note: listItem.querySelector('.note').textContent,
+                        quantity: listItem.querySelector('.quantity').textContent.replace('Quantity: ', ''),
                         packed: listItem.querySelector('.checkbox').checked
                     };
                 });
                 localStorage.setItem('packingList', JSON.stringify(items));
             }
 
-            function addItem(text, note) {
-                renderListItem({ text, note, packed: false });
+            function addItem(text, note, quantity) {
+                renderListItem({ text, note, quantity, packed: false });
                 saveItems();
             }
 
@@ -169,13 +185,16 @@
             }
 
             function togglePacked(checkbox) {
-                const listItem = checkbox.parentElement;
+                const listItem = checkbox.parentElement.parentElement;
                 listItem.querySelector('.itemText').classList.toggle('checked', checkbox.checked);
                 saveItems();
             }
 
             function renderListItem(item) {
                 const li = document.createElement('li');
+
+                const itemHeader = document.createElement('div');
+                itemHeader.classList.add('itemHeader');
 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -189,6 +208,10 @@
                     itemText.classList.add('checked');
                 }
 
+                const quantity = document.createElement('span');
+                quantity.textContent = `Quantity: ${item.quantity}`;
+                quantity.classList.add('quantity');
+
                 const note = document.createElement('span');
                 note.textContent = item.note;
                 note.classList.add('note');
@@ -197,8 +220,10 @@
                 deleteButton.textContent = 'Delete';
                 deleteButton.classList.add('delete');
 
-                li.appendChild(checkbox);
-                li.appendChild(itemText);
+                itemHeader.appendChild(checkbox);
+                itemHeader.appendChild(itemText);
+                li.appendChild(itemHeader);
+                li.appendChild(quantity);
                 li.appendChild(note);
                 li.appendChild(deleteButton);
 
